@@ -1,10 +1,11 @@
 import React from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
-import { botTestnet } from './chains';
-import Dashboard from './Dashboard';
-import './index.css';
 
-function App() {
+interface Props {
+  children: React.ReactNode;
+}
+
+const PrivyWrapper: React.FC<Props> = ({ children }) => {
   return (
     <PrivyProvider
       appId={import.meta.env.VITE_PRIVY_APP_ID}
@@ -17,13 +18,11 @@ function App() {
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
-        defaultChain: botTestnet,
-        supportedChains: [botTestnet],
       }}
     >
-      <Dashboard />
+      {children}
     </PrivyProvider>
   );
-}
+};
 
-export default App;
+export default PrivyWrapper;

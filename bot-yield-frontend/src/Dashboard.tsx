@@ -1,133 +1,241 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { Wallet, TrendingUp, Activity, Shield, ArrowRight } from 'lucide-react';
+import { ArrowRight, Activity, Shield, TrendingUp, Wallet, LogOut, Blocks, Fuel, Zap, BarChart3 } from 'lucide-react';
+import { useChainStats, useWalletBalance } from './hooks';
 
-const Dashboard = () => {
-  const { login, ready, authenticated, user, logout } = usePrivy();
+const Dashboard: React.FC = () => {
+  const { login, logout, ready, authenticated, user } = usePrivy();
+  const chainStats = useChainStats();
+  const walletAddress = user?.wallet?.address;
+  const walletBalance = useWalletBalance(walletAddress);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [activeTab, setActiveTab] = useState<'bot' | 'usdt'>('bot');
+
+  const displayAddress = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : user?.email?.address || 'Connected';
 
   return (
-    <div className="container animate-fade-in" style={{ paddingTop: '40px', paddingBottom: '60px' }}>
-      
-      {/* Navigation Bar */}
-      <nav className="flex-between glass-panel" style={{ padding: '16px 24px', marginBottom: '40px' }}>
-        <div className="flex-center" style={{ gap: '12px' }}>
-          <div className="status-dot"></div>
-          <h2 style={{ fontSize: '20px', margin: 0 }}>BOT Yield Optimizer</h2>
-        </div>
-        
-        <div className="flex-center" style={{ gap: '16px' }}>
-          {authenticated && user ? (
-            <>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '14px', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '20px' }}>
-                {user.wallet?.address ? `${user.wallet.address.slice(0,6)}...${user.wallet.address.slice(-4)}` : user.email?.address}
-              </div>
-              <button className="btn-secondary" onClick={logout}>Disconnect</button>
-            </>
+    <div className="app-wrapper">
+      <div className="bg-grid"></div>
+      <div className="ambient-glow ambient-glow-1"></div>
+      <div className="ambient-glow ambient-glow-2"></div>
+      <div className="ambient-glow ambient-glow-3"></div>
+
+      <div className="container animate-fade-in">
+
+        {/* Navigation */}
+        <nav className="nav-bar glass-panel">
+          <div className="nav-brand">
+            <div className="brand-icon">
+              <TrendingUp size={18} color="#3B82F6" />
+            </div>
+            <span className="brand-name">BOT Yield</span>
+          </div>
+
+          <div className="nav-links">
+            <a href="#" className="nav-link active">Dashboard</a>
+            <a href="#" className="nav-link">Strategies</a>
+            <a href="#" className="nav-link">Analytics</a>
+          </div>
+
+          {authenticated ? (
+            <div className="wallet-connected">
+              <span className="wallet-address">{displayAddress}</span>
+              <button className="btn-disconnect" onClick={logout}>
+                <LogOut size={14} />
+              </button>
+            </div>
           ) : (
-            <button className="btn-primary" disabled={!ready} onClick={login}>
+            <button className="btn-primary connect-btn" disabled={!ready} onClick={login}>
+              <Wallet size={16} />
               Connect Wallet
             </button>
           )}
+        </nav>
+
+        {/* Hero */}
+        <div className="hero-section">
+          <p className="hero-greeting">BOT Chain Testnet (ID: 968)</p>
+          <h1 className="hero-title">
+            {authenticated
+              ? `Welcome back`
+              : 'Yield Optimizer'}
+          </h1>
+          <p className="hero-subtitle">
+            {authenticated
+              ? `Your BOT balance: ${walletBalance.loading ? 'Loading...' : walletBalance.bot + ' BOT'}`
+              : 'Connect your wallet to start earning optimized yields on BOT Chain.'}
+          </p>
         </div>
-      </nav>
 
-      {/* Main Dashboard Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-        
-        {/* Left Column: Vault Details */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* TVL Hero Card */}
-          <div className="glass-panel" style={{ padding: '40px', background: 'var(--grad-surface)' }}>
-            <h3 style={{ color: 'var(--text-secondary)', fontSize: '16px', marginBottom: '12px', fontWeight: 500 }}>Total Value Locked (TVL)</h3>
-            <h1 className="text-gradient" style={{ fontSize: '48px', marginBottom: '24px' }}>$142,590.00</h1>
-            
-            <div style={{ display: 'flex', gap: '32px' }}>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '4px' }}>Target APY</p>
-                <p style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: 600 }}>18.4%</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '4px' }}>Risk Score</p>
-                <p style={{ color: 'var(--text-primary)', fontSize: '24px', fontWeight: 600 }}>A+</p>
-              </div>
-            </div>
+        {/* Stats Row — Live from Testnet */}
+        <div className="stats-row">
+          <div className="stat-card glass-panel">
+            <div className="stat-icon blue"><Blocks size={18} color="#3B82F6" /></div>
+            <span className="stat-label">Block Height</span>
+            <span className="stat-value text-gradient">{chainStats.blockNumber}</span>
+            <span className={`stat-change ${chainStats.networkStatus === 'live' ? 'positive' : 'neutral'}`}>
+              {chainStats.networkStatus === 'live' && <><span className="status-dot" style={{ width: 6, height: 6, marginRight: 4 }}></span>Live</>}
+              {chainStats.networkStatus === 'loading' && 'Connecting...'}
+              {chainStats.networkStatus === 'offline' && 'Offline'}
+            </span>
           </div>
+          <div className="stat-card glass-panel">
+            <div className="stat-icon green"><Fuel size={18} color="#10B981" /></div>
+            <span className="stat-label">Gas Price</span>
+            <span className="stat-value" style={{ color: 'var(--accent-green)' }}>{chainStats.gasPrice}</span>
+            <span className="stat-change positive">Near-zero fees</span>
+          </div>
+          <div className="stat-card glass-panel">
+            <div className="stat-icon amber"><Zap size={18} color="#F59E0B" /></div>
+            <span className="stat-label">Block Time</span>
+            <span className="stat-value" style={{ color: 'var(--accent-amber)' }}>0.75s</span>
+            <span className="stat-change neutral">Sub-second finality</span>
+          </div>
+          <div className="stat-card glass-panel">
+            <div className="stat-icon purple"><BarChart3 size={18} color="#8B5CF6" /></div>
+            <span className="stat-label">Target APY</span>
+            <span className="stat-value" style={{ color: '#8B5CF6' }}>18.4%</span>
+            <span className="stat-change positive">Outperforming market</span>
+          </div>
+        </div>
 
-          {/* Deposit Actions */}
-          <div className="glass-panel" style={{ padding: '32px' }}>
-            <h3 style={{ fontSize: '20px', marginBottom: '24px' }}>Deposit Assets</h3>
-            
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-              <div style={{ flex: 1, padding: '16px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '12px' }}>
-                <div className="flex-between" style={{ marginBottom: '16px' }}>
-                  <span style={{ fontWeight: 600 }}>BOT</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>Bal: 0.00</span>
+        {/* Main Grid */}
+        <div className="main-grid">
+
+          {/* Left: Deposit */}
+          <div className="deposit-section glass-panel">
+            <h3 className="section-title">Deposit Assets</h3>
+
+            <div className="token-tabs">
+              <button className={`token-tab ${activeTab === 'bot' ? 'active' : ''}`} onClick={() => setActiveTab('bot')}>BOT</button>
+              <button className={`token-tab ${activeTab === 'usdt' ? 'active' : ''}`} onClick={() => setActiveTab('usdt')}>USDT</button>
+            </div>
+
+            <div className="deposit-input-wrapper">
+              <div className="deposit-input-row">
+                <input
+                  type="text"
+                  className="deposit-input"
+                  placeholder="0.00"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                />
+                <div className="deposit-input-suffix">
+                  <button className="max-btn" onClick={() => {
+                    if (activeTab === 'bot' && authenticated) {
+                      setDepositAmount(walletBalance.bot);
+                    }
+                  }}>MAX</button>
+                  <span className="token-label">{activeTab.toUpperCase()}</span>
                 </div>
-                <div className="flex-between">
-                  <input type="text" placeholder="0.0" style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '20px', width: '100%', outline: 'none' }} />
-                  <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>Max</button>
-                </div>
+              </div>
+              <div className="balance-row">
+                <span>Available Balance</span>
+                <span>
+                  {authenticated
+                    ? (activeTab === 'bot' ? `${walletBalance.bot} BOT` : '0.00 USDT')
+                    : `0.00 ${activeTab.toUpperCase()}`}
+                </span>
               </div>
             </div>
 
-            <button className="btn-primary" style={{ width: '100%', padding: '16px', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-              Deposit to Vault <ArrowRight size={18} />
+            <button className="btn-primary deposit-btn" onClick={() => { if (!authenticated) login(); }}>
+              {authenticated ? 'Deposit to Vault' : 'Connect Wallet to Deposit'}
+              <ArrowRight size={18} />
             </button>
-          </div>
-        </div>
 
-        {/* Right Column: AI Strategy & Status */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* AI Strategy Widget */}
-          <div className="glass-panel" style={{ padding: '32px' }}>
-            <div className="flex-center" style={{ gap: '12px', justifyContent: 'flex-start', marginBottom: '24px' }}>
-              <Activity color="var(--accent-blue)" />
-              <h3 style={{ fontSize: '18px' }}>AI Keeper Strategy</h3>
-            </div>
-            
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', marginBottom: '16px' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
-                Claude AI is actively analyzing liquidity pools on BDex. Current market volatility is low. 
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div className="flex-between" style={{ fontSize: '14px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Current Strategy</span>
-                <span style={{ color: 'var(--accent-green)' }}>USDT/BOT LP</span>
+            <div className="deposit-info">
+              <div className="info-row">
+                <span>Estimated APY</span>
+                <span className="info-value">18.4%</span>
               </div>
-              <div className="flex-between" style={{ fontSize: '14px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Last Rebalance</span>
-                <span style={{ color: 'var(--text-primary)' }}>2 mins ago</span>
+              <div className="info-row">
+                <span>Withdrawal Fee</span>
+                <span className="info-value">0.1%</span>
+              </div>
+              <div className="info-row">
+                <span>Lock Period</span>
+                <span className="info-value">None</span>
+              </div>
+              <div className="info-row">
+                <span>Network</span>
+                <span className="info-value">BOT Testnet (968)</span>
               </div>
             </div>
           </div>
 
-          {/* Security Features */}
-          <div className="glass-panel" style={{ padding: '32px' }}>
-             <div className="flex-center" style={{ gap: '12px', justifyContent: 'flex-start', marginBottom: '16px' }}>
-              <Shield color="var(--text-secondary)" />
-              <h3 style={{ fontSize: '18px' }}>Security & Audits</h3>
-            </div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <li className="flex-center" style={{ justifyContent: 'flex-start', gap: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-blue)' }}></div>
-                Smart Contract Audited
-              </li>
-              <li className="flex-center" style={{ justifyContent: 'flex-start', gap: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-blue)' }}></div>
-                Non-Custodial Architecture
-              </li>
-              <li className="flex-center" style={{ justifyContent: 'flex-start', gap: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-blue)' }}></div>
-                Keeper Role Segregation
-              </li>
-            </ul>
-          </div>
+          {/* Right Column */}
+          <div className="right-column">
 
+            {/* Strategy Card */}
+            <div className="strategy-card glass-panel">
+              <div className="section-header">
+                <Activity size={18} color="var(--accent-blue)" />
+                <h3 className="section-title" style={{ margin: 0 }}>Active Strategy</h3>
+              </div>
+
+              <div className="strategy-status">
+                <div className="status-dot"></div>
+                <span className="strategy-status-text">Live — Optimizing</span>
+              </div>
+
+              <div className="strategy-details">
+                <div className="detail-row">
+                  <span className="detail-label">Current Pool</span>
+                  <span className="detail-value">USDT/BOT LP</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Last Rebalance</span>
+                  <span className="detail-value">2 min ago</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">24h Volume</span>
+                  <span className="detail-value">$48,210</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Keeper Cycles</span>
+                  <span className="detail-value">127</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Card */}
+            <div className="security-card glass-panel">
+              <div className="section-header">
+                <Shield size={18} color="var(--text-secondary)" />
+                <h3 className="section-title" style={{ margin: 0 }}>Security</h3>
+              </div>
+              <ul className="security-list">
+                <li className="security-item">
+                  <div className="check-icon">✓</div>
+                  <span>Non-Custodial Architecture</span>
+                </li>
+                <li className="security-item">
+                  <div className="check-icon">✓</div>
+                  <span>Keeper Role Segregation</span>
+                </li>
+                <li className="security-item">
+                  <div className="check-icon">✓</div>
+                  <span>On-chain Transparency</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
+
+        {/* Footer */}
+        <footer className="footer">
+          <span className="footer-text">© 2025 BOT Yield Optimizer. Built on BOT Chain.</span>
+          <div className="footer-links">
+            <a href="https://dev-docs.botchain.ai" target="_blank" rel="noopener noreferrer" className="footer-link">Docs</a>
+            <a href="https://scan.bohr.life" target="_blank" rel="noopener noreferrer" className="footer-link">Explorer</a>
+            <a href="https://dex.bohr.life" target="_blank" rel="noopener noreferrer" className="footer-link">B DEX</a>
+            <a href="https://www.botchain.ai" target="_blank" rel="noopener noreferrer" className="footer-link">BOT Chain</a>
+          </div>
+        </footer>
+
       </div>
     </div>
   );
